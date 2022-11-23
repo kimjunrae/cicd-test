@@ -1,0 +1,272 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: demo-db
+  name: demo-db
+  namespace: manual-demo
+spec:
+  ports:
+  - name: tcp
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: demo-db
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: was-server
+  name: was-server
+  namespace: manual-demo
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: was-server
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 30
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: web-server
+  name: web-server
+  namespace: manual-demo
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: web-server
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo-db
+  name: demo-db
+  namespace: manual-demo
+spec:
+  selector:
+    matchLabels:
+      app: demo-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: demo-db
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_DATABASE
+          value: acloud
+        - name: MYSQL_USER
+          value: acloud
+        - name: MYSQL_PASSWORD
+          value: Acloud(2020!@)
+        - name: MYSQL_ROOT_PASSWORD
+          value: Root(2020!@)
+        image: regi.acloud.run/library/demo-db:dev-local
+        imagePullPolicy: Always
+        name: mariadb
+        resources:
+          limits:
+            cpu: 500m
+            memory: "1073741824"
+          requests:
+            cpu: 300m
+            memory: "536870912"
+        securityContext:
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: was-server
+  name: was-server
+  namespace: manual-demo
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: was-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: was-server
+    spec:
+      containers:
+      - env:
+        - name: DB_USER
+          value: acloud
+        - name: DB_PASSWORD
+          value: Acloud(2020!@)
+        - name: DB_URL
+          value: jdbc:mariadb://demo-db:3306/acloud?useUnicode=true&charaterEncoding=utf-8&autoReconnect=true&zeroDateTimeBehavior=convertToNull
+        image: regi.acloud.run/library/was-server:dev-local
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/check/liveness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: was-server
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/check/readiness
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 50
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2147483648"
+          requests:
+            cpu: 500m
+            memory: "1073741824"
+        securityContext:
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web-server
+  name: web-server
+  namespace: manual-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: web-server
+    spec:
+      containers:
+      - image: regi.acloud.run/library/web-server:dev-local
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: web-server
+        resources:
+          limits:
+            cpu: 200m
+            memory: "209715200"
+          requests:
+            cpu: 100m
+            memory: "104857600"
+        securityContext:
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/conf.d/default.conf
+          name: nginx-config
+          subPath: default.conf
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: nginx
+        name: nginx-config
+
+---
+apiVersion: v1
+data:
+  default.conf: "server {\n    listen       80;\n    server_name  \"localhost\";\n
+    \n    #access_log off;\n \n    location / {\n        proxy_pass         http://was-server:8080/;\n
+    \n        proxy_set_header   Host             $host;\n        proxy_set_header
+    \  X-Real-IP        $remote_addr;\n        proxy_set_header   X-Forwarded-For
+    \ $proxy_add_x_forwarded_for;\n        proxy_set_header   X-Forwarded-Proto http;\n
+    \       proxy_max_temp_file_size 0;\n \n        proxy_connect_timeout      150;\n
+    \       proxy_send_timeout         100;\n        proxy_read_timeout         100;\n
+    \n        proxy_buffer_size          8k;\n        proxy_buffers              4
+    32k;\n        proxy_busy_buffers_size    64k;\n        proxy_temp_file_write_size
+    64k;\n \n    }\n    gzip on;\n    gzip_comp_level 2;\n    gzip_proxied any;\n
+    \   gzip_min_length 1000;\n    gzip_disable \"MSIE [1-6]\\.\";\n    gzip_types
+    text/plain text/css application/json application/x-javascript text/xml application/xml
+    application/xml+rss text/javascript application/javascript font/ttf font/opentype
+    application/vnd.ms-fontobject image/svg+xml;\n\n}\n"
+kind: ConfigMap
+metadata:
+  name: nginx
+  namespace: manual-demo

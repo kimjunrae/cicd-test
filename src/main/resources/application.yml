@@ -1,0 +1,56 @@
+spring:
+  profiles: default
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    async:
+      request-timeout: 3600000
+    static-path-pattern: /static/**
+
+  resources:
+    static-locations: classpath:/static/
+    add-mappings: true
+
+
+  batch:
+    job:
+      enabled: false
+
+
+logging:
+  level: "${LOG_LEVEL:INFO}"
+
+security:
+  ignored: /**
+
+server:
+  use-forward-headers: true
+  compression:
+    enabled: true
+    min-response-size: 1
+  session:
+    persistent: true
+    cookie:
+      http-only: true
+      path: "/"
+  port: 8080
+  context-path: "/"
+  tomcat:
+    accept-count: "${TOMCAT_ACCEPT_COUNT:10}"
+    max-threads: "${TOMCAT_MAX_THREADS:500}"
+    min-spare-threads: "${TOMCAT_MIN_THREADS:75}"
+
+
+datasource:
+  doosan:
+    driver-class-name: "${DB_DRIVER:org.mariadb.jdbc.Driver}"
+    url: "${DB_URL:jdbc:mariadb://101.55.69.111:30562/acloud?useUnicode=true&charaterEncoding=utf-8&autoReconnect=true&zeroDateTimeBehavior=convertToNull}"
+    user-name: "${DB_USER:acloud}"
+    password: "${DB_PASSWORD:Acloud(2020!@)}"
+    initial-size: "${INITIAL_SIZE:10}"
+    max-active: "${MAX_ACTIVE:100}"
+    max-idle: "${MAX_IDLE:100}"
+    min-idle: "${MIN_IDLE:50}"
+    max-wait: "${MAX_WAIT:0}"
+    sleep-time: "${SLEEP-_TIME:100}"
+

@@ -1,0 +1,21 @@
+jaeger sampling 인스톨러 반영
+메타 데이터의 끝으로 건너뛰기
+작성자 : 김 민석 - 6월 01, 2020 메타 데이터의 시작으로 이동
+agent/charts/jaeger/templates
+kubectl create -f 1.configmap-jaeger-collector.yaml 
+kubectl create -f 2.deploy-jaeger-collector.taml
+고객사 서비스 (TPCC 예시)
+kubectl create f 1.tpcc configmap.yaml 등록 시 configmap 수정
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tpcc-config
+  labels:
+    app: tpcc
+data:
+  JDBC_URL: "jdbc:postgresql://10.97.45.246:5432/postgres"
+  JDBC_USER: exem
+  JDBC_PASSWORD: exem
+  WR_ADDR: 10.10.102.37:1314
+  JAEGER_SAMPLER_TYPE: remote
+  JAEGER_SAMPLER_MANAGER_HOST_PORT: "jaeger-agent:5778"

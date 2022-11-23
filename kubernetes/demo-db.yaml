@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: demo-db
+  name: demo-db
+spec:
+  ports:
+  - name: tcp
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: demo-db
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo-db
+  name: demo-db
+spec:
+  selector:
+    matchLabels:
+      app: demo-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: demo-db
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_DATABASE
+          value: acloud
+        - name: MYSQL_USER
+          value: acloud
+        - name: MYSQL_PASSWORD
+          value: Acloud(2020!@)
+        - name: MYSQL_ROOT_PASSWORD
+          value: Root(2020!@)
+        image: regi.acloud.run/library/demo-db:dev-local
+        imagePullPolicy: Always
+        name: mariadb
+        resources:
+          limits:
+            cpu: 500m
+            memory: "1073741824"
+          requests:
+            cpu: 300m
+            memory: "536870912"
+        securityContext:
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30

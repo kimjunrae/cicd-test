@@ -1,0 +1,42 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.doosan.demo.dao.ICodeMapper">
+	
+	<select id="getCodes" parameterType="string" resultType="Code">
+		SELECT /* [Code.xml].[getCodes].[01] 변경일자(20170313) */
+			cd.code_group_id			groupId,
+			cd.`code`,
+			cd.`value`,
+			cd.description
+		FROM codes cd
+		WHERE cd.code_group_id = #{groupId}
+		ORDER BY cd.sort_order
+	</select>
+	
+	<select id="getSubCodes" parameterType="map" resultType="SubCode">
+		SELECT /* [Code.xml].[getSubCodes].[01] 변경일자(20170313) */
+			cd.code_group_id			groupId,
+			cd.`code`					subGroupId,
+			sc.code_group_id			subCodeGroupId,
+			sc.`code`,
+			sc.`value`,
+			sc.description
+		FROM codes cd, codes sc
+		WHERE
+			cd.code_group_id = #{groupId}
+			AND cd.`code` = #{subGroupId}
+			AND cd.`value` = sc.code_group_id
+		ORDER BY sc.sort_order
+	</select>
+
+    <select id="getCode" parameterType="map" resultType="Code">
+        SELECT /* [Code.xml].[getCode].[01] 변경일자(20170313) */
+			cd.code_group_id			groupId,
+			cd.`code`,
+			cd.`value`,
+			cd.description
+		FROM codes cd
+		WHERE cd.code_group_id = #{groupId}
+            AND cd.`code` = #{code}
+    </select>
+	
+</mapper>
